@@ -43,7 +43,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     internal var setupWindow: SetupWindow?
     internal var supportWindow: SupportWindow?
     
-    internal var menuBarItem: NSStatusItem? = nil
     internal var combinedView: CombinedView = CombinedView()
     internal var modulesMounted: Bool = false
     
@@ -63,6 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     static func main() {
         let launchStart = Date()
         let app = NSApplication.shared
+        StatsWorkCenter.prepareLocalPreferences()
         let delegate = AppDelegate()
         delegate.launchStart = launchStart
         app.delegate = delegate
@@ -75,6 +75,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         self.suppressStatusBarTilingConstraintUpdates()
         self.parseArguments()
         self.parseVersion()
+        StatsWorkCenter.shared.prepareMonitoringPanels(combined: self.combinedView)
         SMCHelper.shared.checkForUpdate()
         self.setup {
             modules.reversed().forEach{ $0.mount() }
@@ -82,7 +83,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             self.showSettingsIfNoActiveWidgets()
         }
         self.defaultValues()
-        self.icon()
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.listenForAppPause), name: .pause, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.handleToggleSettings), name: .toggleSettings, object: nil)
@@ -102,6 +102,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         self.startTS = Date()
     }
     
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == WorkLinks.scheme {
+            if url.host == "add" {
+                StatsWorkCenter.shared.openInSettings()
+                return
+            }
+            if url.host == "item", let id = UUID(uuidString: url.lastPathComponent) {
+                StatsWorkCenter.shared.openInSettings(id)
+                return
+            }
+        }
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        StatsWorkCenter.shared.mayClose ? .terminateNow : .terminateCancel
+    }
+
     func applicationWillTerminate(_ aNotification: Notification) {
         modules.forEach{ $0.terminate() }
         DB.shared.flush()

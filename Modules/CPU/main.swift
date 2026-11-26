@@ -146,7 +146,9 @@ public class CPU: Module {
         self.processReader = ProcessReader(.CPU) { [weak self] value in
             self?.popupView.processCallback(value)
             self?.previewView.processCallback(value)
+            if let value { self?.publishTopProcesses(value) }
         }
+        self.topProcessesReader = self.processReader
         self.averageLoadReader = AverageLoadReader(.CPU, popup: true) { [weak self] value in
             self?.popupView.averageCallback(value)
             self?.previewView.averageCallback(value)

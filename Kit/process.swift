@@ -27,14 +27,16 @@ public class ProcessesView: NSStackView {
     private let values: [ProcessHeader]
     private let showPID: Bool
     private let showChart: Bool
+    private let allowsTermination: Bool
     private var list: [ProcessView] = []
     private var header: ProcessView? = nil
     private var windowObserver: NSObjectProtocol? = nil
     
-    public init(frame: NSRect = .zero, values: [ProcessHeader], n: Int = 0, showPID: Bool = false, showChart: Bool = false) {
+    public init(frame: NSRect = .zero, values: [ProcessHeader], n: Int = 0, showPID: Bool = false, showChart: Bool = false, allowsTermination: Bool = true) {
         self.values = values
         self.showPID = showPID
         self.showChart = showChart
+        self.allowsTermination = allowsTermination
         
         super.init(frame: frame)
         
@@ -82,7 +84,8 @@ public class ProcessesView: NSStackView {
     private func makeRow(header: Bool = false, alternate: Bool = false) -> ProcessView {
         let detailed = self.showPID || self.showChart
         let size = CGSize(width: self.frame.width > 0 ? self.frame.width : 264, height: detailed ? (header ? 24 : 28) : ProcessView.height)
-        return ProcessView(size: size, values: self.values, showPID: self.showPID, showChart: self.showChart, header: header, alternate: detailed && alternate)
+        return ProcessView(size: size, values: self.values, showPID: self.showPID, showChart: self.showChart,
+                           header: header, alternate: detailed && alternate, allowsTermination: self.allowsTermination)
     }
     
     public func setNumberOfProcesses(_ n: Int) {
@@ -122,6 +125,7 @@ public class ProcessView: NSStackView {
     private let header: Bool
     private let alternate: Bool
     private let detailed: Bool
+    private let allowsTermination: Bool
     private var pid: Int? = nil
     private var lock: Bool = false
     private var hovered: Bool = false
@@ -144,10 +148,11 @@ public class ProcessView: NSStackView {
         self.init(size: size, values: Array(repeating: ("", nil), count: n), showPID: showPID, showChart: showChart, header: false, alternate: false)
     }
     
-    fileprivate init(size: CGSize, values: [ProcessHeader], showPID: Bool, showChart: Bool, header: Bool, alternate: Bool) {
+    fileprivate init(size: CGSize, values: [ProcessHeader], showPID: Bool, showChart: Bool, header: Bool, alternate: Bool, allowsTermination: Bool = true) {
         self.header = header
         self.alternate = alternate
         self.detailed = showPID || showChart
+        self.allowsTermination = allowsTermination
         
         super.init(frame: NSRect(origin: .zero, size: size))
         
@@ -190,6 +195,8 @@ public class ProcessView: NSStackView {
             process.alignment = .centerY
             process.distribution = .fill
             process.spacing = 6
+            process.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            self.labelView.setContentHuggingPriority(.defaultLow, for: .horizontal)
             process.addArrangedSubview(imageBox)
             process.addArrangedSubview(self.labelView)
             self.addArrangedSubview(process)
@@ -282,7 +289,7 @@ public class ProcessView: NSStackView {
                 } else if values.count != 1 {
                     field.font = .systemFont(ofSize: 10, weight: .regular)
                 }
-                if self.header {
+                if self.header && !(self.detailed && values.count == 1) {
                     field.widthAnchor.constraint(greaterThanOrEqualToConstant: width).isActive = true
                     field.setContentCompressionResistancePriority(.required, for: .horizontal)
                 } else {
@@ -326,7 +333,7 @@ public class ProcessView: NSStackView {
     }
     
     public override func mouseDown(with: NSEvent) {
-        guard !self.header, self.pid != nil else { return }
+        guard self.allowsTermination, !self.header, self.pid != nil else { return }
         self.setLock(!self.lock)
     }
     
@@ -371,7 +378,7 @@ public class ProcessView: NSStackView {
     }
     
     fileprivate func setLock(_ state: Bool) {
-        self.lock = state && self.pid != nil
+        self.lock = self.allowsTermination && state && self.pid != nil
         self.imageView.isHidden = self.lock
         self.killView.isHidden = !self.lock
         self.needsDisplay = true
@@ -382,7 +389,7 @@ public class ProcessView: NSStackView {
     }
     
     @objc private func kill() {
-        if let pid = self.pid, pid > 0 {
+        if self.allowsTermination, let pid = self.pid, pid > 0 {
             _ = syncShell("kill -9 \(pid)")
             self.clear()
         }

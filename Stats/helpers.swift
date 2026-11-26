@@ -173,6 +173,7 @@ extension AppDelegate {
     }
     
     internal func checkForNewVersion(silent: Bool = false) {
+        guard Bundle.main.bundleIdentifier == "eu.exelban.Stats" else { return }
         updater.check { result, error in
             if error != nil {
                 debug("error updater.check(): \(error!.localizedDescription)")
@@ -332,32 +333,6 @@ extension AppDelegate {
                 m.enable()
             }
         }
-        self.icon()
-    }
-    
-    internal func icon() {
-        if self.pauseState {
-            guard self.menuBarItem == nil else { return }
-            
-            self.menuBarItem = NSStatusBar.system.statusItem(withLength: AppIcon.size.width)
-            DispatchQueue.main.async(execute: {
-                self.menuBarItem?.autosaveName = "Stats"
-            })
-            self.menuBarItem?.button?.addSubview(AppIcon())
-            
-            self.menuBarItem?.button?.target = self
-            self.menuBarItem?.button?.action = #selector(self.openSettings)
-            self.menuBarItem?.button?.sendAction(on: [.leftMouseDown, .rightMouseDown])
-        } else {
-            if let item = self.menuBarItem {
-                NSStatusBar.system.removeStatusItem(item)
-            }
-            self.menuBarItem = nil
-        }
-    }
-    
-    @objc internal func openSettings() {
-        NotificationCenter.default.post(name: .toggleSettings, object: nil, userInfo: ["module": "Dashboard"])
     }
     
     internal func handleKeyEvent(_ event: NSEvent) {

@@ -104,14 +104,28 @@ open class PopupWrapper: NSStackView, Popup_p {
     }
 }
 
+public struct PopupPage {
+    fileprivate let label: String
+    fileprivate let size: NSSize
+    fileprivate let makeView: () -> NSView
+    fileprivate let onClose: () -> Void
+
+    public init(label: String, size: NSSize, makeView: @escaping () -> NSView, onClose: @escaping () -> Void) {
+        self.label = label
+        self.size = size
+        self.makeView = makeView
+        self.onClose = onClose
+    }
+}
+
 public class PopupWindow: NSPanel, NSWindowDelegate {
     private let viewController: PopupViewController
     internal var locked: Bool = false
     internal var openedBy: widget_t? = nil
     
-    public init(title: String, module: ModuleType, view: Popup_p?, visibilityCallback: @escaping (_ state: Bool) -> Void) {
+    public init(title: String, module: ModuleType, view: Popup_p?, page: PopupPage? = nil, visibilityCallback: @escaping (_ state: Bool) -> Void) {
         self.viewController = PopupViewController(module: module)
-        self.viewController.setup(title: title, view: view)
+        self.viewController.setup(title: title, view: view, page: page)
         
         super.init(
             contentRect: NSRect(
@@ -198,10 +212,13 @@ internal class PopupViewController: NSViewController {
         NotificationCenter.default.post(name: .popupVisibilityChanged, object: nil, userInfo: ["state": false])
     }
     
-    fileprivate func setup(title: String, view: Popup_p?) {
+    fileprivate func setup(title: String, view: Popup_p?, page: PopupPage?) {
         self.title = title
         self.popup.setTitle(title)
         self.popup.setView(view)
+        if let page {
+            self.popup.setPage(page, primaryLabel: title == "Combined modules" ? "监控" : localizedString(title))
+        }
     }
     
     fileprivate func setCloseButton(_ state: Bool) {
@@ -211,6 +228,8 @@ internal class PopupViewController: NSViewController {
 
 internal class PopupView: NSView {
     private var view: Popup_p? = nil
+    private var page: PopupPage?
+    private var pageView: NSView?
     
     private var foreground: NSVisualEffectView
     private var background: NSView
@@ -298,13 +317,45 @@ internal class PopupView: NSView {
         self.foreground.setFrameSize(size)
         self.background.setFrameSize(size)
         self.resizeBody(size, scrollVisible: isScrollVisible)
-        self.header.setFrameOrigin(NSPoint(x: 0, y: size.height - Constants.Popup.headerHeight))
+        self.header.frame = NSRect(x: 0, y: size.height - Constants.Popup.headerHeight,
+                                   width: size.width, height: Constants.Popup.headerHeight)
         
         if let view = view {
             self.body.documentView = view
             view.sizeCallback = { [weak self] size in
-                self?.recalculateHeight(size)
+                guard let self, self.pageView == nil else { return }
+                self.recalculateHeight(size)
             }
+        }
+    }
+
+    fileprivate func setPage(_ page: PopupPage, primaryLabel: String) {
+        self.page = page
+        self.header.setTabs(primary: primaryLabel, secondary: page.label) { [weak self] showPage in
+            self?.selectPage(showPage)
+        }
+    }
+
+    private func selectPage(_ showPage: Bool, keepOpen: Bool = true) {
+        guard let page, showPage != (self.pageView != nil) else { return }
+        if showPage {
+            self.view?.disappear()
+            let editor = page.makeView()
+            editor.autoresizingMask = [.width, .height]
+            self.pageView = editor
+            self.body.isHidden = true
+            self.recalculateHeight(page.size, keepTopEdge: true)
+            editor.frame = self.body.frame
+            self.addSubview(editor, positioned: .below, relativeTo: self.header)
+            self.window?.makeKey()
+        } else {
+            page.onClose()
+            self.pageView?.removeFromSuperview()
+            self.pageView = nil
+            self.body.isHidden = false
+            self.header.selectPrimaryTab()
+            if let view { self.recalculateHeight(view.frame.size, keepTopEdge: keepOpen) }
+            if keepOpen { self.view?.appear() }
         }
     }
     
@@ -334,11 +385,12 @@ internal class PopupView: NSView {
     }
     internal func disappear() {
         self.header.setCloseButton(false)
+        self.selectPage(false, keepOpen: false)
         self.view?.disappear()
         (self.view as? PopupWrapper)?.releaseContent()
     }
     
-    private func recalculateHeight(_ size: NSSize) {
+    private func recalculateHeight(_ size: NSSize, keepTopEdge: Bool = false) {
         var isScrollVisible: Bool = false
         var windowSize: NSSize = NSSize(
             width: size.width + (Constants.Popup.margins*2),
@@ -346,24 +398,35 @@ internal class PopupView: NSView {
         )
         let h0 = self.containerHeight ?? 0
         
-        self.windowHeight = NSScreen.main?.visibleFrame.height // for height recalculate when appear/disappear
+        let screen = self.window?.screen ?? NSScreen.main
+        self.windowHeight = screen?.visibleFrame.height // for height recalculate when appear/disappear
         self.containerHeight = self.body.documentView?.frame.height // for scroll diff calculation
-        if let screenHeight = NSScreen.main?.visibleFrame.height, windowSize.height > screenHeight {
+        if let screenHeight = screen?.visibleFrame.height, windowSize.height > screenHeight {
             windowSize.height = screenHeight - Constants.Widget.height
-            isScrollVisible = true
+            isScrollVisible = self.pageView == nil
         }
-        if let screenWidth = NSScreen.main?.visibleFrame.width, windowSize.width > screenWidth {
+        if let screenWidth = screen?.visibleFrame.width, windowSize.width > screenWidth {
             windowSize.width = screenWidth
         }
-        
-        self.window?.setContentSize(windowSize)
+
+        if keepTopEdge, let window = self.window {
+            let size = window.frameRect(forContentRect: NSRect(origin: .zero, size: windowSize)).size
+            let previous = window.frame
+            var origin = NSPoint(x: previous.midX - size.width / 2, y: previous.maxY - size.height)
+            if let visible = screen?.visibleFrame {
+                origin.x = min(max(origin.x, visible.minX), max(visible.minX, visible.maxX - size.width))
+                origin.y = max(origin.y, visible.minY)
+            }
+            window.setFrame(NSRect(origin: origin, size: size), display: true)
+        } else {
+            self.window?.setContentSize(windowSize)
+        }
         self.foreground.setFrameSize(windowSize)
         self.background.setFrameSize(windowSize)
         self.resizeBody(windowSize, scrollVisible: isScrollVisible)
-        self.header.setFrameOrigin(NSPoint(
-            x: self.header.frame.origin.x,
-            y: self.body.frame.height + (Constants.Popup.margins*2)
-        ))
+        self.header.frame = NSRect(x: 0, y: windowSize.height - Constants.Popup.headerHeight,
+                                   width: windowSize.width, height: Constants.Popup.headerHeight)
+        self.pageView?.frame = self.body.frame
         
         if let documentView = self.body.documentView {
             let diff = h0 - (self.body.documentView?.frame.height ?? 0)
@@ -388,6 +451,8 @@ internal class PopupView: NSView {
 
 internal class HeaderView: NSStackView {
     private var titleView: NSTextField? = nil
+    private var tabs: NSSegmentedControl?
+    private var switchTab: ((Bool) -> Void)?
     private var activityButton: NSButton?
     
     private var title: String = ""
@@ -447,9 +512,9 @@ internal class HeaderView: NSStackView {
         settings.toolTip = localizedString("Open module")
         settings.focusRingType = .none
         
-        self.addArrangedSubview(activity)
-        self.addArrangedSubview(title)
-        self.addArrangedSubview(settings)
+        self.addView(activity, in: .leading)
+        self.addView(title, in: .center)
+        self.addView(settings, in: .trailing)
         
         NSLayoutConstraint.activate([
             title.widthAnchor.constraint(
@@ -465,6 +530,24 @@ internal class HeaderView: NSStackView {
     fileprivate func setTitle(_ newTitle: String) {
         self.title = newTitle
         self.titleView?.stringValue = localizedString(newTitle)
+    }
+
+    fileprivate func setTabs(primary: String, secondary: String, action: @escaping (Bool) -> Void) {
+        if let titleView { self.removeView(titleView) }
+        let tabs = NSSegmentedControl(labels: [primary, secondary], trackingMode: .selectOne,
+                                      target: self, action: #selector(self.tabSelected(_:)))
+        tabs.selectedSegment = 0
+        self.addView(tabs, in: .center)
+        self.tabs = tabs
+        self.switchTab = action
+    }
+
+    fileprivate func selectPrimaryTab() {
+        self.tabs?.selectedSegment = 0
+    }
+
+    @objc private func tabSelected(_ sender: NSSegmentedControl) {
+        self.switchTab?(sender.selectedSegment == 1)
     }
     
     private func setupActionButton() {

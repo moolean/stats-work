@@ -137,8 +137,10 @@ public class RAM: Module {
             if let list = value {
                 self?.popupView.processCallback(list)
                 self?.previewView.processCallback(list)
+                self?.publishTopProcesses(list)
             }
         }
+        self.topProcessesReader = self.processReader
         
         self.settingsView.callbackWhenUpdateNumberOfProcesses = { [weak self] in
             self?.popupView.numberOfProcessesUpdated()

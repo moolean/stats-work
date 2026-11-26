@@ -27,5 +27,6 @@ struct WidgetsBundle: WidgetBundle {
         DiskWidget()
         NetworkWidget()
         UnitedWidget()
+        PinnedWorkWidget()
     }
 }

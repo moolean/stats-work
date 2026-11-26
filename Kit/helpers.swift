@@ -2211,7 +2211,7 @@ public final class SystemWidgetUpdates {
         self.encoder.outputFormatting = .sortedKeys
     }
     
-    public func update<T: Encodable>(_ value: T, key: String, kinds: [String], defaults: UserDefaults?) {
+    public func update<T: Encodable>(_ value: T, key: String, kinds: [String], defaults: StatsWidgetDefaults?) {
         guard let defaults else { return }
         self.queue.async {
             guard defaults.bool(forKey: "systemWidgetsUpdates_state") else { return }
@@ -2234,7 +2234,7 @@ public final class SystemWidgetUpdates {
         }
     }
     
-    private func activeKinds(_ kinds: [String], defaults: UserDefaults) -> [String] {
+    private func activeKinds(_ kinds: [String], defaults: StatsWidgetDefaults) -> [String] {
         kinds.filter { self.configuredKinds.contains($0) || SystemWidgetUpdates.isWidgetActive(defaults, [$0]) }
     }
     
@@ -2265,7 +2265,7 @@ public final class SystemWidgetUpdates {
         }
     }
     
-    static func isWidgetActive(_ defaults: UserDefaults?, _ widgets: [String]) -> Bool {
+    static func isWidgetActive(_ defaults: StatsWidgetDefaults?, _ widgets: [String]) -> Bool {
         for name in widgets {
             guard let lastUpdate = defaults?.double(forKey: name) else { return false }
             let timeSinceUpdate = Date().timeIntervalSince1970 - lastUpdate

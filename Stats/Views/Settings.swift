@@ -104,6 +104,10 @@ class SettingsWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate {
         NotificationCenter.default.removeObserver(self, name: .toggleModule, object: nil)
     }
     
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        StatsWorkCenter.shared.mayClose
+    }
+
     func windowWillClose(_ notification: Notification) {
         self.updateReaderVisibility(visible: false)
         let onClose = self.onClose
@@ -137,7 +141,7 @@ class SettingsWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if event.type == NSEvent.EventType.keyDown && event.modifierFlags.contains(.command) {
             if event.keyCode == 12 || event.keyCode == 13 {
-                self.close()
+                self.performClose(self)
                 return true
             } else if event.keyCode == 46 {
                 self.miniaturize(event)
@@ -219,6 +223,11 @@ class SettingsWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate {
             } else if title == "Dashboard" {
                 self.activeModuleName = nil
                 view = self.dashboard
+                self.toggleButton?.isHidden = true
+                self.settingsPreviewButton?.isHidden = true
+            } else if title == StatsWorkCenter.title {
+                self.activeModuleName = nil
+                view = StatsWorkCenter.shared.settingsView
                 self.toggleButton?.isHidden = true
                 self.settingsPreviewButton?.isHidden = true
             } else if title == "Settings" {
@@ -355,6 +364,9 @@ private class SidebarView: NSStackView {
         
         self.scrollView.stackView.addArrangedSubview(MenuItem(icon: self.dashboardIcon, title: "Dashboard"))
         self.scrollView.stackView.addArrangedSubview(spacer)
+        self.scrollView.stackView.addArrangedSubview(
+            MenuItem(icon: iconFromSymbol(name: "pin", scale: .large), title: StatsWorkCenter.title)
+        )
         
         self.supportPopover.behavior = .transient
         self.supportPopover.contentViewController = self.supportView()
@@ -405,7 +417,7 @@ private class SidebarView: NSStackView {
         list.reversed().forEach { (m: Module) in
             if !m.available { return }
             let menu: NSView = MenuItem(icon: m.config.icon, title: m.config.name)
-            self.scrollView.stackView.insertArrangedSubview(menu, at: 2)
+            self.scrollView.stackView.insertArrangedSubview(menu, at: 3)
         }
     }
     
@@ -474,7 +486,7 @@ private class SidebarView: NSStackView {
     }
     
     @objc private func reportBug() {
-        NSWorkspace.shared.open(URL(string: "https://github.com/exelban/stats/issues/new?template=bug_report.yml")!)
+        NSWorkspace.shared.open(URL(string: "https://github.com/moolean/stats-work/issues/new")!)
     }
     
     @objc private func donate(_ sender: NSButton) {

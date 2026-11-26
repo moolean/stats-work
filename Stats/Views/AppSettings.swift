@@ -49,11 +49,11 @@ class ApplicationSettings: NSStackView {
     
     private var systemWidgetsUpdatesState: Bool {
         get {
-            let userDefaults = UserDefaults(suiteName: "\(Bundle.main.object(forInfoDictionaryKey: "TeamId") as! String).eu.exelban.Stats.widgets")
+            let userDefaults = Optional(StatsWidgetDefaults.shared)
             return userDefaults?.bool(forKey: "systemWidgetsUpdates_state") ?? false
         }
         set {
-            let userDefaults = UserDefaults(suiteName: "\(Bundle.main.object(forInfoDictionaryKey: "TeamId") as! String).eu.exelban.Stats.widgets")
+            let userDefaults = Optional(StatsWidgetDefaults.shared)
             userDefaults?.set(newValue, forKey: "systemWidgetsUpdates_state")
         }
     }
@@ -341,6 +341,7 @@ class ApplicationSettings: NSStackView {
     // MARK: - actions
     
     @objc private func updateAction() {
+        guard Bundle.main.bundleIdentifier == "eu.exelban.Stats" else { return }
         updater.check(force: true, completion: { result, error in
             if error != nil {
                 debug("error updater.check(): \(error!.localizedDescription)")

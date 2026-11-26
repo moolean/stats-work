@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Stats</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -16,8 +18,21 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLName</key>
+			<string>com.moolean.stats-work</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>moolean-stats-work</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
-	<string>858</string>
+	<string>866</string>
 	<key>Description</key>
 	<string>Simple macOS system monitor in your menu bar</string>
 	<key>LSApplicationCategoryType</key>
@@ -45,12 +60,5 @@
 	<string>NSApplication</string>
 	<key>NSUserNotificationAlertStyle</key>
 	<string>alert</string>
-	<key>SMPrivilegedExecutables</key>
-	<dict>
-		<key>eu.exelban.Stats.SMC.Helper</key>
-		<string>anchor apple generic and identifier "eu.exelban.Stats.SMC.Helper" and (certificate leaf[field.1.2.840.113635.100.6.1.9] /* exists */ or certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = RP2S87B72W)</string>
-	</dict>
-	<key>TeamId</key>
-	<string>RP2S87B72W</string>
 </dict>
 </plist>

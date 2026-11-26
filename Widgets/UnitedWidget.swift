@@ -8,6 +8,7 @@
 
 import SwiftUI
 import WidgetKit
+import Kit
 
 import CPU
 import GPU
@@ -41,7 +42,7 @@ public struct United_entry: TimelineEntry {
 public struct Provider: TimelineProvider {
     public typealias Entry = United_entry
     
-    private let userDefaults: UserDefaults? = UserDefaults(suiteName: "\(Bundle.main.object(forInfoDictionaryKey: "TeamId") as! String).eu.exelban.Stats.widgets")
+    private let userDefaults: StatsWidgetDefaults? = Optional(StatsWidgetDefaults.shared)
     
     public func placeholder(in context: Context) -> United_entry {
         United_entry()

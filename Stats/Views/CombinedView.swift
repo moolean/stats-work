@@ -13,9 +13,12 @@ import Cocoa
 import Kit
 
 internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
+    static let panelWidth: CGFloat = 535
+
     private var menuBarItem: NSStatusItem? = nil
     private var view: NSView = NSView(frame: NSRect(x: 0, y: 0, width: 0, height: Constants.Widget.height))
     private var popup: PopupWindow? = nil
+    var secondaryPopupPage: PopupPage?
     private var clickMonitor: Any? = nil
     private let summary: CombinedSummaryWidget = CombinedSummaryWidget()
     
@@ -95,7 +98,11 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
         DispatchQueue.main.async(execute: {
             self.menuBarItem?.autosaveName = "CombinedModules"
         })
-        self.menuBarItem?.button?.addSubview(self.view)
+        if let button = self.menuBarItem?.button {
+            self.view.frame = button.bounds
+            self.view.autoresizingMask = [.height]
+            button.addSubview(self.view)
+        }
         self.menuBarItem?.button?.image = NSImage()
         self.menuBarItem?.button?.toolTip = localizedString("Combined modules")
         
@@ -128,9 +135,7 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
         }
         
         if CombinedModulesWidget.current == .icon {
-            self.view.addSubview(AppIcon())
-            self.view.setFrameSize(NSSize(width: AppIcon.size.width, height: self.view.frame.height))
-            self.menuBarItem?.length = AppIcon.size.width
+            self.showAppIcon()
             return
         }
         
@@ -148,8 +153,22 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
             m.menuBar.view.setFrameOrigin(NSPoint(x: w, y: 0))
             w += m.menuBar.view.frame.width
         }
-        self.view.setFrameSize(NSSize(width: w, height: self.view.frame.height))
-        self.menuBarItem?.length = w
+        self.resizeStatusContent(toWidth: w)
+    }
+
+    private func resizeStatusContent(toWidth width: CGFloat) {
+        guard let item = self.menuBarItem else { return }
+        item.length = width
+        let height = item.button?.bounds.height ?? self.view.frame.height
+        self.view.frame = NSRect(x: 0, y: 0, width: width, height: height)
+    }
+
+    private func showAppIcon() {
+        self.resizeStatusContent(toWidth: AppIcon.size.width)
+        let icon = AppIcon()
+        icon.setFrameOrigin(NSPoint(x: 0, y: (self.view.bounds.height - icon.frame.height) / 2))
+        icon.autoresizingMask = [.minYMargin, .maxYMargin]
+        self.view.addSubview(icon)
     }
     
     private func updateSummary() {
@@ -158,9 +177,7 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
         
         if list.isEmpty {
             self.view.subviews.forEach({ $0.removeFromSuperview() })
-            self.view.addSubview(AppIcon())
-            self.view.setFrameSize(NSSize(width: AppIcon.size.width, height: self.view.frame.height))
-            self.menuBarItem?.length = AppIcon.size.width
+            self.showAppIcon()
             self.menuBarItem?.button?.toolTip = localizedString("Combined modules")
             self.menuBarItem?.button?.setAccessibilityLabel(localizedString("Combined modules"))
             return
@@ -168,19 +185,16 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
         
         if self.summary.superview == nil {
             self.view.subviews.forEach({ $0.removeFromSuperview() })
+            self.summary.autoresizingMask = [.width, .height]
             self.view.addSubview(self.summary)
         }
-        
-        self.summary.update(list)
-        self.view.setFrameSize(self.summary.frame.size)
-        self.menuBarItem?.length = self.summary.frame.width
+
+        self.resizeStatusContent(toWidth: self.summary.update(list))
+        self.summary.frame = self.view.bounds
         
         self.menuBarItem?.button?.toolTip = self.summary.toolTip
         self.menuBarItem?.button?.setAccessibilityLabel(self.summary.toolTip)
     }
-    
-    // call when popup appear/disappear
-    private func visibilityCallback(_ state: Bool) {}
     
     @objc private func handleClick() {
         if CombinedModulesWidget.current != .widgets || self.combinedModulesPopup {
@@ -238,7 +252,8 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
         guard let item = self.menuBarItem, let window = item.button?.window else { return }
         
         if self.popup == nil {
-            self.popup = PopupWindow(title: "Combined modules", module: .combined, view: Popup()) { _ in }
+            self.popup = PopupWindow(title: "Combined modules", module: .combined, view: Popup(),
+                                     page: self.secondaryPopupPage) { _ in }
         }
         guard let popup = self.popup else { return }
         
@@ -402,17 +417,17 @@ private class CombinedSummaryWidget: NSView {
         }
     }
     
-    fileprivate func update(_ list: [Module]) {
+    fileprivate func update(_ list: [Module]) -> CGFloat {
         self.values = list.map { module in
             (module.moduleType, self.values.first(where: { $0.0 == module.moduleType })?.1)
         }
         let width: CGFloat = CombinedModulesWidget.current == .bars ? max(22, CGFloat(self.values.count) * 6 + 2) : 22
-        self.setFrameSize(NSSize(width: width, height: Constants.Widget.height))
         self.toolTip = list.map { module in
             let value = self.values.first(where: { $0.0 == module.moduleType })?.1.map({ "\(Int($0 * 100))%" }) ?? localizedString("Unknown")
             return "\(localizedString(module.name)): \(value)"
         }.joined(separator: "\n")
         self.needsDisplay = true
+        return width
     }
 }
 
@@ -441,17 +456,53 @@ private class SeparatorLineView: NSView {
 private class Popup: NSStackView, Popup_p {
     fileprivate var keyboardShortcut: [UInt16] = []
     fileprivate var sizeCallback: ((NSSize) -> Void)? = nil
+    private let processTable = ProcessesView(values: [("占用", nil)], showPID: true, allowsTermination: false)
+    private let overview = NSStackView()
+    private let processHeader = NSStackView()
+    private lazy var processTabs = NSSegmentedControl(labels: ["CPU", "内存"], trackingMode: .selectOne,
+                                                      target: self, action: #selector(self.updateProcessSelection))
+    private lazy var processTableHeight = self.processTable.heightAnchor.constraint(equalToConstant: 24)
+    private lazy var overviewHeight = self.overview.heightAnchor.constraint(equalToConstant: 0)
+    private var processModules: [Module?] = [nil, nil]
+    private var portalHeight: CGFloat = 0
+    private var observedModule: Module?
+    private var monitoringVisible = false
     
     init() {
         self.keyboardShortcut = Store.shared.array(key: "CombinedModules_popup_keyboardShortcut", defaultValue: []) as? [UInt16] ?? []
         
-        super.init(frame: NSRect(x: 0, y: 0, width: Constants.Popup.width, height: 0))
+        super.init(frame: NSRect(x: 0, y: 0, width: CombinedView.panelWidth, height: 0))
         
         self.orientation = .vertical
         self.distribution = .fill
         self.alignment = .width
-        self.spacing = Constants.Popup.spacing*3
+        self.spacing = 10
+        self.edgeInsets = NSEdgeInsets(top: 6, left: 8, bottom: 8, right: 8)
+
+        self.overview.orientation = .horizontal
+        self.overview.distribution = .fillEqually
+        self.overview.alignment = .height
+        self.overview.spacing = 10
+        self.overviewHeight.isActive = true
         
+        let title = NSTextField(labelWithString: "进程")
+        title.font = .systemFont(ofSize: 13, weight: .semibold)
+        title.setContentHuggingPriority(.required, for: .horizontal)
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        self.processHeader.orientation = .horizontal
+        self.processHeader.alignment = .centerY
+        self.processHeader.distribution = .fill
+        self.processHeader.addArrangedSubview(title)
+        self.processHeader.addArrangedSubview(spacer)
+        self.processHeader.addArrangedSubview(self.processTabs)
+        self.processTabs.setContentHuggingPriority(.required, for: .horizontal)
+        self.processHeader.heightAnchor.constraint(equalToConstant: 30).isActive = true
+
+        self.processTable.alignment = .width
+        self.processTable.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        self.processTableHeight.isActive = true
+        self.processTabs.selectedSegment = 0
         self.reinit()
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.reinit), name: .toggleModule, object: nil)
@@ -462,34 +513,128 @@ private class Popup: NSStackView, Popup_p {
     }
     
     deinit {
-        NotificationCenter.default.removeObserver(self, name: .toggleOneView, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .toggleModule, object: nil)
+        self.observedModule?.observeTopProcesses(nil)
     }
     
     fileprivate func settings() -> NSView? { return nil }
-    fileprivate func appear() {}
-    fileprivate func disappear() {}
+    fileprivate func appear() {
+        self.monitoringVisible = true
+        self.updateProcessSelection()
+    }
+    fileprivate func disappear() {
+        self.monitoringVisible = false
+        self.observedModule?.observeTopProcesses(nil)
+        self.observedModule = nil
+    }
     fileprivate func setKeyboardShortcut(_ binding: [UInt16]) {
         self.keyboardShortcut = binding
         Store.shared.set(key: "CombinedModules_popup_keyboardShortcut", value: binding)
     }
     
     @objc private func reinit() {
-        self.subviews.forEach({ $0.removeFromSuperview() })
+        self.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        self.overview.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
         let availableModules = modules.filter({ $0.enabled && $0.portal != nil })
-        var modulesHeight: CGFloat = 0
-        availableModules.forEach { (m: Module) in
-            if let p = m.portal {
-                modulesHeight += p.height
-                self.addArrangedSubview(p)
-                p.widthAnchor.constraint(equalTo: self.widthAnchor).isActive = true
+        let summaryPortals = [ModuleType.CPU, .RAM].compactMap { type in
+            availableModules.first { $0.moduleType == type }?.portal
+        }
+        let otherPortals = availableModules.filter { $0.moduleType != .CPU && $0.moduleType != .RAM }.compactMap(\.portal)
+        self.portalHeight = 0
+        if let tallest = summaryPortals.map(\.height).max() {
+            self.overviewHeight.constant = tallest + 20
+            summaryPortals.forEach { self.overview.addArrangedSubview(self.overviewCard($0)) }
+            self.portalHeight += self.overviewHeight.constant
+            self.addFullWidthSection(self.overview)
+        }
+        for portal in otherPortals {
+            self.portalHeight += portal.height
+            self.addFullWidthSection(portal)
+        }
+
+        self.processModules = [.CPU, .RAM].map { type in
+            availableModules.first { $0.moduleType == type && $0.topProcessesReader != nil }
+        }
+        self.addFullWidthSection(self.processHeader)
+        self.addFullWidthSection(self.processTable)
+        let available = self.processModules.indices.filter { self.processModules[$0] != nil }
+        self.processHeader.isHidden = available.isEmpty
+        self.processModules.indices.forEach { self.processTabs.setEnabled(self.processModules[$0] != nil, forSegment: $0) }
+        if !available.contains(self.processTabs.selectedSegment) {
+            self.processTabs.selectedSegment = available.first ?? -1
+        }
+        self.updateProcessSelection()
+    }
+
+    private func addFullWidthSection(_ section: NSView) {
+        self.addArrangedSubview(section)
+        section.widthAnchor.constraint(equalTo: self.widthAnchor,
+                                       constant: -(self.edgeInsets.left + self.edgeInsets.right)).isActive = true
+    }
+
+    private func overviewCard(_ portal: Portal_p) -> NSBox {
+        let card = NSBox()
+        card.boxType = .custom
+        card.titlePosition = .noTitle
+        card.cornerRadius = 9
+        card.borderWidth = 1
+        card.borderColor = .separatorColor
+        card.fillColor = NSColor.labelColor.withAlphaComponent(0.025)
+        card.contentViewMargins = .zero
+
+        let content = NSView()
+        card.contentView = content
+        portal.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(portal)
+        NSLayoutConstraint.activate([
+            portal.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 10),
+            portal.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -10),
+            portal.topAnchor.constraint(equalTo: content.topAnchor, constant: 10)
+        ])
+        return card
+    }
+
+    @objc private func updateProcessSelection() {
+        let index = self.processTabs.selectedSegment
+        let module = self.processModules.indices.contains(index) ? self.processModules[index] : nil
+        let count = module.map { max(0, Store.shared.int(key: "\($0.name)_processes", defaultValue: 8)) } ?? 0
+        self.processTable.setNumberOfProcesses(count)
+        self.processTableHeight.constant = 24 + 28 * CGFloat(count)
+        self.processTable.isHidden = count == 0
+
+        let next = self.monitoringVisible && count > 0 ? module : nil
+        if self.observedModule !== next {
+            self.observedModule?.observeTopProcesses(nil)
+            self.observedModule = next
+            self.processTable.clear()
+            if let next {
+                let isCPU = next.moduleType == .CPU
+                next.observeTopProcesses { [weak self] processes in
+                    self?.drawProcesses(processes, cpu: isCPU)
+                }
             }
         }
-        
-        let h = modulesHeight + (CGFloat(availableModules.count-1)*self.spacing)
-        if h > 0 {
-            self.setFrameSize(NSSize(width: self.frame.width, height: h))
+
+        let spacing = CGFloat(max(0, self.arrangedSubviews.filter { !$0.isHidden }.count - 1)) * self.spacing
+        let headerHeight: CGFloat = self.processHeader.isHidden ? 0 : 30
+        let tableHeight = self.processTable.isHidden ? 0 : self.processTableHeight.constant
+        let height = self.portalHeight + headerHeight + tableHeight + spacing + self.edgeInsets.top + self.edgeInsets.bottom
+        if height != self.frame.height {
+            self.setFrameSize(NSSize(width: self.frame.width, height: height))
             self.sizeCallback?(self.frame.size)
+        }
+    }
+
+    private func drawProcesses(_ processes: [TopProcess], cpu: Bool) {
+        for index in 0..<self.processTable.count {
+            guard processes.indices.contains(index) else {
+                self.processTable.set(index, nil, [])
+                continue
+            }
+            let process = processes[index]
+            let value = cpu ? "\(process.usage)%" : Units(bytes: Int64(process.usage)).getReadableMemory(style: .memory)
+            self.processTable.set(index, process, [value])
         }
     }
 }

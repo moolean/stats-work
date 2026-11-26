@@ -94,7 +94,7 @@ open class Module {
         get { Store.shared.int(key: "\(self.name)_position", defaultValue: 0) }
         set { Store.shared.set(key: "\(self.name)_position", value: newValue) }
     }
-    public var userDefaults: UserDefaults? = UserDefaults(suiteName: "\(Bundle.main.object(forInfoDictionaryKey: "TeamId") as! String).eu.exelban.Stats.widgets")
+    public var userDefaults: StatsWidgetDefaults? = Optional(StatsWidgetDefaults.shared)
     
     public var popupKeyboardShortcut: [UInt16] { self.popupView?.keyboardShortcut ?? [] }
     
@@ -102,12 +102,15 @@ open class Module {
     
     private var settingsView: Settings_v? = nil
     private var popup: PopupWindow? = nil
+    public var secondaryPopupPage: PopupPage?
     private var popupView: Popup_p? = nil
     private var notificationsView: NotificationsWrapper? = nil
     private var previewView: PreviewWrapper? = nil
     
     private let log: NextLog
     private var readers: [Reader_p] = []
+    public var topProcessesReader: Reader<[TopProcess]>?
+    private var topProcessesObserver: (([TopProcess]) -> Void)?
     private var popupVisible = false
     private var settingsVisible = false
     
@@ -254,6 +257,22 @@ open class Module {
     public func setReaders(_ list: [Reader_p?]) {
         self.readers = list.filter({ $0 != nil }).map({ $0! as Reader_p })
     }
+
+    public func observeTopProcesses(_ observer: (([TopProcess]) -> Void)?) {
+        guard let reader = self.topProcessesReader else { return }
+        let wasObserved = self.topProcessesObserver != nil
+        self.topProcessesObserver = observer
+        if wasObserved != (observer != nil) {
+            self.updateReaderVisibility()
+        }
+        if let observer, let value = reader.value { observer(value) }
+    }
+
+    public func publishTopProcesses(_ processes: [TopProcess]) {
+        DispatchQueue.main.async { [weak self] in
+            self?.topProcessesObserver?(processes)
+        }
+    }
     
     public func summaryCallback(_ value: Double?) {
         guard self.config.hasSummary else { return }
@@ -300,7 +319,8 @@ open class Module {
         let shared = reader.sleep || (!reader.popup && !reader.preview)
         return self.enabled && (
             (self.popupVisible && (reader.popup || shared)) ||
-            (self.settingsVisible && (reader.preview || shared))
+            (self.settingsVisible && (reader.preview || shared)) ||
+            (self.topProcessesObserver != nil && (reader as? Reader<[TopProcess]>) === self.topProcessesReader)
         )
     }
     
@@ -347,7 +367,8 @@ open class Module {
             view.prepareForDisplay()
         }
         if self.popup == nil {
-            self.popup = PopupWindow(title: self.config.name, module: self.moduleType, view: self.popupView, visibilityCallback: self.popupVisibilityCallback)
+            self.popup = PopupWindow(title: self.config.name, module: self.moduleType, view: self.popupView,
+                                     page: self.secondaryPopupPage, visibilityCallback: self.popupVisibilityCallback)
         }
         guard let popup = self.popup else { return }
         

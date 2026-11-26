@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		060E963CC53946D18835C856 /* StatsWidgetDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0702F97D771A45439249152D /* StatsWidgetDefaults.swift */; };
+		4011729D5C8B4C87BFBEC942 /* PinnedWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51592638511A4ABE8FE57832 /* PinnedWork.swift */; };
+		333494AD1B6A4740B7A4F5A2 /* WorkShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9026A288CDDD4045AC152BA6 /* WorkShared.swift */; };
+		CC03AF8B852E4A89925BCD10 /* WorkShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9026A288CDDD4045AC152BA6 /* WorkShared.swift */; };
+		FD924A06232540AA9E9ADCB3 /* WorkPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1895A846F11343FF8021B6D1 /* WorkPanel.swift */; };
+		E707A6E07B0C4672A166457A /* WorkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE024A62EE234D2699C92402 /* WorkStore.swift */; };
+		338A42E04A4D456887002B4E /* WorkCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB66EB17FE1B46C5BD673D28 /* WorkCenter.swift */; };
 		4A05F9BD83C04F70BFFF7F37 /* Kit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369463B2B7EA4AF0A895A9B6 /* Kit.swift */; };
 		5C038CF62D86EE8A00516809 /* SystemStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C038CF52D86EE8700516809 /* SystemStats.swift */; };
 		5C044F7A2B3DE6F3005F6951 /* portal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C044F792B3DE6F3005F6951 /* portal.swift */; };
@@ -537,6 +544,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0702F97D771A45439249152D /* StatsWidgetDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Kit/module/StatsWidgetDefaults.swift"; sourceTree = SOURCE_ROOT; };
+		51592638511A4ABE8FE57832 /* PinnedWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Widgets/PinnedWork.swift"; sourceTree = SOURCE_ROOT; };
+		9026A288CDDD4045AC152BA6 /* WorkShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Stats/WorkShared.swift"; sourceTree = SOURCE_ROOT; };
+		1895A846F11343FF8021B6D1 /* WorkPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Stats/WorkPanel.swift"; sourceTree = SOURCE_ROOT; };
+		AE024A62EE234D2699C92402 /* WorkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Stats/WorkStore.swift"; sourceTree = SOURCE_ROOT; };
+		CB66EB17FE1B46C5BD673D28 /* WorkCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Stats/WorkCenter.swift"; sourceTree = SOURCE_ROOT; };
 		0192A7ED2B017E190056F918 /* hi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hi; path = hi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		13BE56042D0E6963001C58EC /* en-AU */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-AU"; path = "en-AU.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		2658929724FC0F3B00FB3B6A /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
@@ -1529,7 +1542,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5CE7E7A02C318513006BC92C /* Build configuration list for PBXNativeTarget "WidgetsExtension" */;
 			buildPhases = (
-				5CC0857F2C419E4B00910F90 /* Set widgets extension version */,
 				5CE7E7862C318512006BC92C /* Sources */,
 				5CE7E7872C318512006BC92C /* Frameworks */,
 				5CE7E7882C318512006BC92C /* Resources */,
@@ -1613,11 +1625,9 @@
 				9A1410F1229E721100D29793 /* Sources */,
 				9A1410F2229E721100D29793 /* Frameworks */,
 				9A1410F3229E721100D29793 /* Resources */,
-				5EF7B23E30A1D8000045B7F1 /* Generate menu bar icon */,
 				9AB54DAE22A19F96006192E0 /* Copy Files */,
 				9A6698E72326AB16001D00E1 /* Embed Frameworks */,
 				9AECEF3D24ACF98800DB95D4 /* Copy Files */,
-				9A88E2672659002E00E2B7B0 /* ShellScript */,
 				9A46BF89266D7CFA001A1117 /* CopyFiles */,
 				5CFE493C29265130000F2856 /* Copy Files */,
 				5CD3A10329265130000F2856 /* Copy LaunchDaemons */,
@@ -2043,8 +2053,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9A6CFC0122A1C9F5001E782D /* Assets.xcassets in Resources */,
-				5E8E7354308E1D1100126136 /* Stats.icon in Resources */,
 				9A9B25BB24F7DE2B00C3CCE6 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2222,6 +2230,8 @@
 			files = (
 				5EC1B2E52E2FEAFB007042A6 /* UnitedWidget.swift in Sources */,
 				5CE7E7A42C318C33006BC92C /* widgets.swift in Sources */,
+				4011729D5C8B4C87BFBEC942 /* PinnedWork.swift in Sources */,
+				333494AD1B6A4740B7A4F5A2 /* WorkShared.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2262,6 +2272,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				9AABEB7A243FD26200668CB0 /* AppDelegate.swift in Sources */,
+				CC03AF8B852E4A89925BCD10 /* WorkShared.swift in Sources */,
+				FD924A06232540AA9E9ADCB3 /* WorkPanel.swift in Sources */,
+				E707A6E07B0C4672A166457A /* WorkStore.swift in Sources */,
+				338A42E04A4D456887002B4E /* WorkCenter.swift in Sources */,
 				9A9EA9452476D34500E3B883 /* Update.swift in Sources */,
 				9A045EB72594F8D100ED58F2 /* Dashboard.swift in Sources */,
 				9A81C74E24499C7000825D92 /* Settings.swift in Sources */,
@@ -2312,6 +2326,7 @@
 				9A2847602666AA2700EC1F6D /* NetworkChart.swift in Sources */,
 				5C23BC0429A014AC00DBA990 /* portal.swift in Sources */,
 				9A2847792666AA5000EC1F6D /* module.swift in Sources */,
+				060E963CC53946D18835C856 /* StatsWidgetDefaults.swift in Sources */,
 				9A2847662666AA2700EC1F6D /* Speed.swift in Sources */,
 				9A2847682666AA2700EC1F6D /* Stack.swift in Sources */,
 				9AEBBE4D28D773430082A6A1 /* Dot.swift in Sources */,
@@ -2749,11 +2764,11 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = eu.exelban.Stats.Widgets;
+				PRODUCT_BUNDLE_IDENTIFIER = com.moolean.stats-work.Widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
-				REGISTER_APP_GROUPS = YES;
+				REGISTER_APP_GROUPS = NO;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -2787,11 +2802,11 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = eu.exelban.Stats.Widgets;
+				PRODUCT_BUNDLE_IDENTIFIER = com.moolean.stats-work.Widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
-				REGISTER_APP_GROUPS = YES;
+				REGISTER_APP_GROUPS = NO;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -3154,7 +3169,7 @@
 		9A141106229E721200D29793 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = Stats;
+
 				CODE_SIGN_ENTITLEMENTS = "Stats/Supporting Files/Stats.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
@@ -3176,14 +3191,14 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 3.1.1;
 				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = eu.exelban.Stats;
+				PRODUCT_BUNDLE_IDENTIFIER = com.moolean.stats-work;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
-				REGISTER_APP_GROUPS = YES;
+				REGISTER_APP_GROUPS = NO;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -3191,7 +3206,7 @@
 		9A141107229E721200D29793 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = Stats;
+
 				CODE_SIGN_ENTITLEMENTS = "Stats/Supporting Files/Stats.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
@@ -3213,14 +3228,14 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 3.1.1;
 				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = eu.exelban.Stats;
+				PRODUCT_BUNDLE_IDENTIFIER = com.moolean.stats-work;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
-				REGISTER_APP_GROUPS = YES;
+				REGISTER_APP_GROUPS = NO;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -3318,7 +3333,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				PRODUCT_BUNDLE_IDENTIFIER = eu.exelban.Stats.LaunchAtLogin;
+				PRODUCT_BUNDLE_IDENTIFIER = com.moolean.stats-work.LaunchAtLogin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
@@ -3346,7 +3361,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				PRODUCT_BUNDLE_IDENTIFIER = eu.exelban.Stats.LaunchAtLogin;
+				PRODUCT_BUNDLE_IDENTIFIER = com.moolean.stats-work.LaunchAtLogin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
