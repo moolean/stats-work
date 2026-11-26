@@ -2,7 +2,7 @@
 
 把 **CPU、内存、进程排行和工作笔记** 放进一个 macOS 菜单栏入口。应用在 Mac 上仍显示为 **Stats**。
 
-[下载 v0.1.0](https://github.com/moolean/stats-work/releases/tag/v0.1.0) · [界面截图](#界面截图) · [本地构建](#本地构建)
+[下载 v0.1.0](https://github.com/moolean/stats-work/releases/tag/v0.1.0) · [界面截图](#界面截图) · [本地构建](#下载与本地构建)
 
 ![Stats Work，监控面板与工作追踪](docs/screenshots/01-stats-overview.png)
 
